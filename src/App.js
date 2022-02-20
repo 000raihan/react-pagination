@@ -1,95 +1,53 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
-import "./App.css";
-import DataList from "./Data-List";
+import React, {useEffect, useState} from 'react';
+import Movie from './components/Movie';
+import Pagination from './components/Pagination';
+import "./App.css"
+
+
+const FEATURED_API = "https://api.themoviedb.org/3/movie/now_playing?api_key=39b616a19667f17d8ffcaa175fc93491&language=en-US";
+// const IMG_API = "https://image.tmdb.org/t/p/w1280";
+// const SEARCH_API = "https://api.themoviedb.org/3/search/movie?&api_key=04c35731a5e e918f014970082a0088b1 &query=";
+
 
 function App() {
-  const [listData, setListData] = useState();
-  const [groupData, setGroupData] = useState();
-  const [groupName, setGroupName] = useState();
-
-  // const [allGroupData, setAllGroupData] = useState();
-
-  // const [singleG, setSingleG] = useState();
-  // const [singleGN, setSingleGN] = useState();
-
-  const [viewAll, setViewAll] = useState(false);
+  const [movies, setMovies] = useState([])
+  // const [loading, setLoading] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [postsPerPage] = useState(5)
 
   useEffect(() => {
-    axios
-      .get(
-        "https://hpedelta.com:8983/solr/credits/select?fq=standard_credits:[*%20TO%20101]&group.field=title&group.limit=10&group.mincount=1&group.sort=standard_credits%20asc&group=true&indent=on&q=*:*&wt=json"
-      )
-      .then((res) => {
-        const fetchedData = res.data;
-        const groupDatas = fetchedData.grouped.title.groups;
-        setGroupData(groupDatas);
-
-        // console.log("data is : ", groupDatas);
-
-        // setSingleG(groupDatas[0].doclist.docs);
-        // setSingleGN(groupDatas[0].groupValue);
-      });
+    fetch(FEATURED_API)
+      .then((res) => res.json())
+      .then((data) => {
+        console.log(data);
+        setMovies(data.results);
+    })
   }, []);
 
-  // console.log("single g is : ", singleG);
 
-  const setListAarray = (e) => {
-    if(e == "" || undefined){
-      setListData();
-      setGroupName();
+  const indexOfLastPost = currentPage * postsPerPage;
+  const indexOfFirstPost = indexOfLastPost - postsPerPage;
+  const currentPosts = movies.slice(indexOfFirstPost, indexOfLastPost);
 
-      return;
-    }
-    const data = JSON.parse(e);
-    setListData(data.doclist.docs);
-    setGroupName(data.groupValue);
-  };
+  const paginate = pageNumber => setCurrentPage(pageNumber);
 
   return (
-    <div className="App">
-      <div className="groupDataSection">
-        <div className="groupData">
-          <h1 className="service-header">Servie Credits Recommendation</h1>
-
-          <div className="filter-section">
-            <div className="select Group">
-              <label for="tutorial_choice" className="choose-filter">Filter</label>
-
-              <select onChange={(e) => setListAarray(e.target.value)}>
-                <option style={{backgroundColor:"red", color:"white"}} value="">No Filter</option>
-                {groupData &&
-                  groupData.map((data) => {
-                    return (
-                      <option
-                        key={data.groupValue}
-                        value={JSON.stringify(data)}
-                      >
-                        {data.groupValue}
-                      </option>
-                    );
-                  })}
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {listData && groupName ? (
-        <DataList groupName={groupName} listData={listData} />
-      ) : (
-        groupData && groupData.map((group) => {
-          // console.log("I'm called");
-          return (
-            <DataList
-              key={group.groupValue}
-              groupName={group.groupValue}
-              listData={group.doclist.docs}
-            />
-          );
-        })
-      )}
+    <>
+    <div className="movie-container">
+    
+      {movies.length > 0 &&
+        currentPosts.map((movie) => (
+        <Movie key={movie.id} {...movie} />
+      ))}
     </div>
+    
+    <Pagination 
+    postsPerPage={postsPerPage}
+    totalPosts = {movies.length}
+    paginate = {paginate}
+    
+    />
+    </>
   );
 }
 
